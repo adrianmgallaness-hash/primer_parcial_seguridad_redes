@@ -1,78 +1,116 @@
-SW-LAN - Configuración relevante
-================================
+SW-LAN - show running-config
+============================
 
-Nota de hostname
-----------------
-Durante las pruebas el prompt observado era `Switch#`. Para cumplir el requisito de hostname, aplicar y verificar antes del video:
-
-configure terminal
+version 15.2
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+service compress-config
+!
 hostname SW-LAN
-end
-copy running-config startup-config
-
-VLANs
------
-vlan 10
- name USERS
-vlan 20
- name ADMIN
-
-Trunk hacia FortiGate
----------------------
+!
+boot-start-marker
+boot-end-marker
+!
+no aaa new-model
+!
+ip cef
+no ipv6 cef
+!
+spanning-tree mode pvst
+spanning-tree extend system-id
+!
 interface GigabitEthernet0/0
+ switchport trunk allowed vlan 10,20
  switchport trunk encapsulation dot1q
  switchport mode trunk
- switchport trunk allowed vlan 10,20
- no shutdown
-
-Puerto de acceso VLAN 10
-------------------------
+ negotiation auto
+!
 interface GigabitEthernet0/1
- switchport mode access
  switchport access vlan 10
- switchport port-security
- switchport port-security maximum 2
- switchport port-security violation shutdown
- no shutdown
-
-Puerto de acceso VLAN 20
-------------------------
-interface GigabitEthernet0/2
  switchport mode access
- switchport access vlan 20
- switchport port-security
  switchport port-security maximum 2
- switchport port-security violation shutdown
- no shutdown
-
-Verificaciones realizadas
--------------------------
-show vlan brief
-show interfaces trunk
-show port-security
-show port-security interface gi0/1
-show port-security interface gi0/2
-show port-security address
-show interfaces status
-
-Evidencia de violación en Gi0/1
--------------------------------
-Maximum MAC Addresses      : 2
-Violation Mode             : Shutdown
-Port Status                : Secure-shutdown
-Security Violation Count   : 1
-Last Source Address:Vlan   : 0211.2233.4402:10
-
-Mensaje observado:
-%PORT_SECURITY-2-PSECURE_VIOLATION: Security violation occurred, caused by MAC address 0211.2233.4402 on port GigabitEthernet0/1.
-
-Estado observado:
-Gi0/1  err-disabled  VLAN 10
-
-Recuperación del puerto
------------------------
-configure terminal
-interface GigabitEthernet0/1
- shutdown
- no shutdown
+ switchport port-security
+ negotiation auto
+!
+interface GigabitEthernet0/2
+ switchport access vlan 20
+ switchport mode access
+ switchport port-security maximum 2
+ switchport port-security
+ negotiation auto
+!
+interface GigabitEthernet0/3
+ negotiation auto
+!
+interface GigabitEthernet1/0
+ negotiation auto
+!
+interface GigabitEthernet1/1
+ negotiation auto
+!
+interface GigabitEthernet1/2
+ negotiation auto
+!
+interface GigabitEthernet1/3
+ negotiation auto
+!
+interface GigabitEthernet2/0
+ negotiation auto
+!
+interface GigabitEthernet2/1
+ negotiation auto
+!
+interface GigabitEthernet2/2
+ negotiation auto
+!
+interface GigabitEthernet2/3
+ negotiation auto
+!
+interface GigabitEthernet3/0
+ negotiation auto
+!
+interface GigabitEthernet3/1
+ negotiation auto
+!
+interface GigabitEthernet3/2
+ negotiation auto
+!
+interface GigabitEthernet3/3
+ negotiation auto
+!
+ip forward-protocol nd
+!
+ip http server
+ip http secure-server
+!
+ip ssh server algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+ip ssh client algorithm encryption aes128-ctr aes192-ctr aes256-ctr
+!
+control-plane
+!
+line con 0
+line aux 0
+line vty 0 4
+!
 end
+
+Verified VLAN / port-security information
+-----------------------------------------
+The IOSvL2 `show running-config` output does not list the VLAN database entries, so these were verified separately during the lab:
+
+VLAN 10  USERS
+VLAN 20  ADMIN
+
+Gi0/0 -> 802.1Q trunk, allowed VLANs 10,20
+Gi0/1 -> access VLAN 10, port-security enabled, maximum 2 MAC addresses
+Gi0/2 -> access VLAN 20, port-security enabled, maximum 2 MAC addresses
+
+Port-security violation verified on Gi0/1:
+- Violation Mode: Shutdown
+- Port Status: Secure-shutdown
+- Security Violation Count: 1
+- Violating MAC: 0211.2233.4402
+- Interface state observed: err-disabled
+
+Note: `shutdown` is the default port-security violation action on this IOSv image, so it does not appear explicitly in `show running-config` even though it was configured and verified with `show port-security interface gi0/1`.
