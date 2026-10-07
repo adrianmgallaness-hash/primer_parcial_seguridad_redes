@@ -1,0 +1,32 @@
+R3 - Configuración relevante verificada
+=====================================
+
+Hostname observado: R3
+
+Interfaces
+----------
+Fa0/0 -> R1
+         10.21.60.2/30
+Fa1/0 -> Red de servidores DB
+         10.21.39.145/28
+
+Rutas estáticas relevantes
+--------------------------
+ip route 10.21.39.0 255.255.255.128 10.21.60.1
+ip route 10.21.39.128 255.255.255.240 10.21.60.1
+ip route 10.21.39.160 255.255.255.240 10.21.60.1
+
+Pruebas verificadas
+-------------------
+ping 10.21.39.146
+ping 10.21.39.147
+
+Comandos de verificación usados
+-------------------------------
+show ip interface brief
+show ip route 10.21.39.0
+show ip route 10.21.39.128
+
+Nota
+----
+Este archivo documenta los parámetros relevantes confirmados durante el laboratorio. Puede reemplazarse por `show running-config` completo antes de la entrega si se desea conservar la configuración integral.
