@@ -1,6 +1,6 @@
 # Primer Parcial — Seguridad de Redes con FortiGate
 
-> **Video de demostración:** [AGREGAR ENLACE DEL VIDEO AQUÍ]
+> **Video de demostración:** [Ver video en YouTube](https://youtu.be/XekOkbG1eL8)
 
 Laboratorio de Seguridad de Redes implementado en GNS3 con FortiGate, routers Cisco, switch IOSv y servidores Ubuntu. El objetivo es demostrar segmentación, control de acceso, filtrado de archivos, port-security, servicios de red y salida controlada a Internet.
 
