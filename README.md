@@ -150,6 +150,15 @@ Desde PC-USUARIOS se comprobó:
 
 ![NAT e Internet](images/internet-nat.png)
 
+## Scripts incluidos
+
+La carpeta `scripts/` contiene comandos reutilizables del laboratorio:
+
+- `web-server-setup.sh`: direccionamiento y verificación del Web Server.
+- `db-server-setup.sh`: direccionamiento, rutas de retorno y verificación de MariaDB.
+- `create-test-files.sh`: genera `permitido.txt` y un archivo PE32 `prueba.exe` para probar el File Filter.
+- `verification-commands.md`: comandos utilizados para demostrar cada requisito.
+
 ## Estructura del repositorio
 
 ```text
@@ -160,6 +169,11 @@ primer_parcial_seguridad_redes/
 │   ├── R3.txt
 │   ├── SW-LAN.txt
 │   └── FortiGate.txt
+├── scripts/
+│   ├── web-server-setup.sh
+│   ├── db-server-setup.sh
+│   ├── create-test-files.sh
+│   └── verification-commands.md
 ├── docs/
 │   └── evidencias.md
 └── images/
