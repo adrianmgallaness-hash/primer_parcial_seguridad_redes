@@ -1,0 +1,168 @@
+FortiGate - Resumen de configuración verificada
+==============================================
+
+Hostname observado: Fortigate-1
+
+Interfaces
+----------
+port1
+  IP: 10.21.50.2/30
+  Hacia: R1 (10.21.50.1)
+  Administrative Access: ping, https, http, ssh
+
+port2
+  Hacia: SW-LAN
+  Función: parent del trunk 802.1Q
+
+VLAN10-USERS
+  Parent: port2
+  VLAN ID: 10
+  IP: 10.21.39.1/25
+  DHCP: habilitado
+  Rango observado: 10.21.39.2 - 10.21.39.126
+
+VLAN20-ADMIN
+  Parent: port2
+  VLAN ID: 20
+  IP: 10.21.39.129/28
+
+port3 / WEB-ZONE
+  IP: 10.21.39.161/28
+  Web Server: 10.21.39.162/28
+
+Rutas
+-----
+Default route:
+  0.0.0.0/0 -> 10.21.50.1 por port1
+
+Red de DB:
+  10.21.39.144/28 -> 10.21.50.1 por port1
+
+Objetos de dirección
+--------------------
+DB-SERVER
+  10.21.39.147/32
+
+SERVERS-NET
+  10.21.39.144/28
+
+WEB-SERVER
+  10.21.39.162/32
+
+DNS-GOOGLE
+  8.8.8.8/32
+
+Objetos FQDN
+------------
+UBUNTU-ARCHIVE
+  archive.ubuntu.com
+
+UBUNTU-SECURITY
+  security.ubuntu.com
+
+Políticas relevantes
+--------------------
+
+BLOCK-USERS-DB-3306
+  Incoming: VLAN10-USERS
+  Outgoing: port1
+  Source: VLAN10-USERS address
+  Destination: DB-SERVER
+  Service: MYSQL / TCP 3306
+  Action: DENY
+  Logging: habilitado
+
+USERS-to-SERVERS
+  Incoming: VLAN10-USERS
+  Outgoing: port1
+  Destination: SERVERS-NET
+  Service: ALL
+  Action: ACCEPT
+  NAT: OFF
+
+USERS-to-INTERNET
+  Incoming: VLAN10-USERS
+  Outgoing: port1
+  Destination: all
+  Service: ALL
+  Action: ACCEPT
+  NAT: ON (Outgoing Interface Address)
+
+WEB-to-DB-3306
+  Incoming: WEB-ZONE / port3
+  Outgoing: port1
+  Source: WEB-SERVER
+  Destination: DB-SERVER
+  Service: MYSQL / TCP 3306
+  Action: ACCEPT
+  NAT: OFF
+  Log Allowed Traffic: All Sessions
+
+WEB-to-UPDATES
+  Incoming: WEB-ZONE / port3
+  Outgoing: port1
+  Source: WEB-SERVER
+  Destination: UBUNTU-ARCHIVE, UBUNTU-SECURITY
+  Service: HTTP, HTTPS
+  Action: ACCEPT
+  NAT: ON
+  Log Allowed Traffic: All Sessions
+
+WEB-to-DNS
+  Incoming: WEB-ZONE / port3
+  Outgoing: port1
+  Source: WEB-SERVER
+  Destination: DNS-GOOGLE
+  Service: DNS
+  Action: ACCEPT
+  NAT: ON
+  Log Allowed Traffic: All Sessions
+
+BLOCK-WEB-OTHER
+  Incoming: WEB-ZONE / port3
+  Outgoing: port1
+  Source: WEB-SERVER
+  Destination: all
+  Service: ALL
+  Action: DENY
+  Log Violation Traffic: ON
+
+USERS-to-WEB
+  Incoming: VLAN10-USERS
+  Outgoing: WEB-ZONE / port3
+  Source: VLAN10-USERS address
+  Destination: WEB-SERVER
+  Service: HTTP
+  Action: ACCEPT
+  NAT: OFF
+  Inspection Mode: Flow-based
+  File Filter: BLOCK-EXE
+  Log Allowed Traffic: All Sessions
+
+Orden relevante de microsegmentación
+------------------------------------
+1. WEB-to-DB-3306
+2. WEB-to-UPDATES
+3. WEB-to-DNS
+4. BLOCK-WEB-OTHER
+
+File Filter
+-----------
+Perfil: BLOCK-EXE
+Regla: BLOCK-EXE-DOWNLOAD
+Protocol: HTTP
+File Type: exe
+Action: Block
+
+Pruebas verificadas
+-------------------
+- VLAN10 -> DB TCP/3306: bloqueado y registrado.
+- VLAN10 -> Web HTTP: permitido.
+- Web -> DB TCP/3306: permitido.
+- Web -> DB ICMP: bloqueado.
+- Web -> Internet ICMP: bloqueado.
+- Web -> 8.8.8.8 TCP/22: bloqueado.
+- Web -> archive.ubuntu.com HTTP: permitido.
+- Web -> example.com HTTP: bloqueado por BLOCK-WEB-OTHER.
+- TCP/443 hacia archive.ubuntu.com abre, pero el handshake TLS completo presentó timeout en el laboratorio.
+- Descarga de `prueba.exe`: interrumpida por File Filter; evento visible en logs.
