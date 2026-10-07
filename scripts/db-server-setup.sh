@@ -1,28 +1,14 @@
 #!/usr/bin/env bash
-set -euo pipefail
+# Comandos usados durante la práctica en el DB Server.
+# DB Server: 10.21.39.147/28
+# Gateway por ens3: 10.21.39.145
 
-# Configuración utilizada para el DB Server del laboratorio.
-# Interfaz de laboratorio: ens3
-# Red de servidores DB: 10.21.39.144/28
-# Gateway R3: 10.21.39.145
-# DB Server: 10.21.39.147
+# Rutas de retorno agregadas durante el troubleshooting y la microsegmentación.
+sudo ip route add 10.21.39.0/25 via 10.21.39.145 dev ens3
+sudo ip route add 10.21.39.128/28 via 10.21.39.145 dev ens3
+sudo ip route add 10.21.60.0/30 via 10.21.39.145 dev ens3
+sudo ip route add 10.21.39.160/28 via 10.21.39.145 dev ens3
 
-sudo ip route flush dev ens3
-sudo ip addr flush dev ens3
-sudo ip addr add 10.21.39.147/28 dev ens3
-sudo ip link set ens3 up
-
-# Rutas de retorno hacia las redes del laboratorio.
-sudo ip route replace 10.21.39.0/25 via 10.21.39.145 dev ens3
-sudo ip route replace 10.21.39.128/28 via 10.21.39.145 dev ens3
-sudo ip route replace 10.21.39.160/28 via 10.21.39.145 dev ens3
-sudo ip route replace 10.21.60.0/30 via 10.21.39.145 dev ens3
-
-# ens4 se utilizó solamente como NAT auxiliar durante la instalación de paquetes.
-sudo ip link set ens4 up || true
-
-# Verificaciones
-ip addr show ens3
+# Verificaciones usadas.
 ip route
-sudo systemctl status mariadb --no-pager || true
-sudo ss -lntp | grep ':3306' || true
+sudo ss -lntp | grep 3306
