@@ -1,32 +1,70 @@
-R3 - Configuración relevante verificada
-=====================================
+R3 - show running-config
+========================
 
-Hostname observado: R3
-
-Interfaces
-----------
-Fa0/0 -> R1
-         10.21.60.2/30
-Fa1/0 -> Red de servidores DB
-         10.21.39.145/28
-
-Rutas estáticas relevantes
---------------------------
+version 15.2
+service timestamps debug datetime msec
+service timestamps log datetime msec
+!
+hostname R3
+!
+boot-start-marker
+boot-end-marker
+!
+no aaa new-model
+no ip icmp rate-limit unreachable
+!
+no ip domain lookup
+ip cef
+no ipv6 cef
+!
+multilink bundle-name authenticated
+!
+ip tcp synwait-time 5
+!
+interface FastEthernet0/0
+ ip address 10.21.60.2 255.255.255.252
+ duplex full
+!
+interface FastEthernet1/0
+ ip address 10.21.39.145 255.255.255.240
+ speed auto
+ duplex auto
+!
+interface FastEthernet1/1
+ no ip address
+ shutdown
+ speed auto
+ duplex auto
+!
+ip forward-protocol nd
+!
+no ip http server
+no ip http secure-server
 ip route 10.21.39.0 255.255.255.128 10.21.60.1
 ip route 10.21.39.128 255.255.255.240 10.21.60.1
 ip route 10.21.39.160 255.255.255.240 10.21.60.1
+!
+control-plane
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+ stopbits 1
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+ stopbits 1
+line vty 0 4
+ login
+!
+end
 
-Pruebas verificadas
--------------------
-ping 10.21.39.146
-ping 10.21.39.147
+Verification notes
+------------------
+- Fa0/0: tránsito hacia R1, 10.21.60.2/30.
+- Fa1/0: gateway de la red DB, 10.21.39.145/28.
+- VLAN 10, VLAN 20 y WEB-ZONE regresan a través de R1 10.21.60.1.
 
-Comandos de verificación usados
--------------------------------
-show ip interface brief
-show ip route 10.21.39.0
-show ip route 10.21.39.128
-
-Nota
-----
-Este archivo documenta los parámetros relevantes confirmados durante el laboratorio. Puede reemplazarse por `show running-config` completo antes de la entrega si se desea conservar la configuración integral.
+Nota: este archivo refleja la salida real de `show running-config` entregada el 7 de octubre de 2026.
