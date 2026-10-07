@@ -1,43 +1,83 @@
-R1 - Configuración relevante verificada
-=====================================
+R1 - show running-config
+========================
 
-Hostname observado: R1
-
-Interfaces
-----------
-Fa0/0  -> Cloud / VMware NAT
-          IP por DHCP (durante la práctica: 192.168.85.184)
-Fa0/1  -> FortiGate
-          10.21.50.1/30
-Fa1/0  -> R3
-          10.21.60.1/30
-
-Rutas estáticas relevantes
---------------------------
-ip route 10.21.39.144 255.255.255.240 10.21.60.2
+version 12.4
+service timestamps debug datetime msec
+service timestamps log datetime msec
+no service password-encryption
+!
+hostname R1
+!
+boot-start-marker
+boot-end-marker
+!
+no aaa new-model
+memory-size iomem 5
+no ip icmp rate-limit unreachable
+ip cef
+!
+ip auth-proxy max-nodata-conns 3
+ip admission max-nodata-conns 3
+no ip dhcp use vrf connected
+ip dhcp excluded-address 10.21.39.1 10.21.39.9
+!
+ip dhcp pool FORTIGATE
+ network 10.21.39.0 255.255.255.0
+ default-router 10.21.39.1
+ dns-server 8.8.8.8
+!
+no ip domain lookup
+!
+ip tcp synwait-time 5
+!
+interface FastEthernet0/0
+ ip address dhcp
+ duplex auto
+ speed auto
+!
+interface FastEthernet0/1
+ ip address 10.21.50.1 255.255.255.252
+ duplex auto
+ speed auto
+!
+interface FastEthernet1/0
+ ip address 10.21.60.1 255.255.255.252
+ duplex auto
+ speed auto
+!
+ip forward-protocol nd
 ip route 10.21.39.0 255.255.255.128 10.21.50.2
 ip route 10.21.39.128 255.255.255.240 10.21.50.2
+ip route 10.21.39.144 255.255.255.240 10.21.60.2
 ip route 10.21.39.160 255.255.255.240 10.21.50.2
+!
+no ip http server
+no ip http secure-server
+!
+no cdp log mismatch duplex
+!
+control-plane
+!
+line con 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line aux 0
+ exec-timeout 0 0
+ privilege level 15
+ logging synchronous
+line vty 0 4
+ login
+!
+end
 
-NAT usado para salida al entorno VMware
----------------------------------------
-interface FastEthernet0/0
- ip nat outside
+Verification notes
+------------------
+- Fa0/0: enlace hacia Cloud/VMware NAT, dirección obtenida por DHCP.
+- Fa0/1: tránsito R1-FortiGate 10.21.50.1/30.
+- Fa1/0: tránsito R1-R3 10.21.60.1/30.
+- Ruta de servidores DB: 10.21.39.144/28 vía 10.21.60.2.
+- Red WEB-ZONE: 10.21.39.160/28 vía FortiGate 10.21.50.2.
+- VLAN 10 y VLAN 20 regresan hacia FortiGate 10.21.50.2.
 
-interface FastEthernet0/1
- ip nat inside
-
-access-list 1 permit 10.21.50.0 0.0.0.3
-ip nat inside source list 1 interface FastEthernet0/0 overload
-
-Comandos de verificación usados
--------------------------------
-show ip interface brief
-show ip route 10.21.39.0
-show ip route 10.21.39.128
-ping 10.21.39.146
-ping 10.21.39.147
-
-Nota
-----
-Este archivo documenta únicamente los parámetros relevantes confirmados durante el laboratorio. Para la entrega final puede reemplazarse por la salida completa de `show running-config` si se desea conservar la configuración integral del equipo.
+Nota: este archivo refleja la salida real de `show running-config` entregada el 7 de octubre de 2026. No se agregaron comandos NAT que no aparecieran en dicha salida.
