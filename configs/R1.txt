@@ -1,0 +1,43 @@
+R1 - Configuración relevante verificada
+=====================================
+
+Hostname observado: R1
+
+Interfaces
+----------
+Fa0/0  -> Cloud / VMware NAT
+          IP por DHCP (durante la práctica: 192.168.85.184)
+Fa0/1  -> FortiGate
+          10.21.50.1/30
+Fa1/0  -> R3
+          10.21.60.1/30
+
+Rutas estáticas relevantes
+--------------------------
+ip route 10.21.39.144 255.255.255.240 10.21.60.2
+ip route 10.21.39.0 255.255.255.128 10.21.50.2
+ip route 10.21.39.128 255.255.255.240 10.21.50.2
+ip route 10.21.39.160 255.255.255.240 10.21.50.2
+
+NAT usado para salida al entorno VMware
+---------------------------------------
+interface FastEthernet0/0
+ ip nat outside
+
+interface FastEthernet0/1
+ ip nat inside
+
+access-list 1 permit 10.21.50.0 0.0.0.3
+ip nat inside source list 1 interface FastEthernet0/0 overload
+
+Comandos de verificación usados
+-------------------------------
+show ip interface brief
+show ip route 10.21.39.0
+show ip route 10.21.39.128
+ping 10.21.39.146
+ping 10.21.39.147
+
+Nota
+----
+Este archivo documenta únicamente los parámetros relevantes confirmados durante el laboratorio. Para la entrega final puede reemplazarse por la salida completa de `show running-config` si se desea conservar la configuración integral del equipo.
