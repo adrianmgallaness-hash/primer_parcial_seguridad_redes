@@ -1,0 +1,78 @@
+SW-LAN - Configuración relevante
+================================
+
+Nota de hostname
+----------------
+Durante las pruebas el prompt observado era `Switch#`. Para cumplir el requisito de hostname, aplicar y verificar antes del video:
+
+configure terminal
+hostname SW-LAN
+end
+copy running-config startup-config
+
+VLANs
+-----
+vlan 10
+ name USERS
+vlan 20
+ name ADMIN
+
+Trunk hacia FortiGate
+---------------------
+interface GigabitEthernet0/0
+ switchport trunk encapsulation dot1q
+ switchport mode trunk
+ switchport trunk allowed vlan 10,20
+ no shutdown
+
+Puerto de acceso VLAN 10
+------------------------
+interface GigabitEthernet0/1
+ switchport mode access
+ switchport access vlan 10
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation shutdown
+ no shutdown
+
+Puerto de acceso VLAN 20
+------------------------
+interface GigabitEthernet0/2
+ switchport mode access
+ switchport access vlan 20
+ switchport port-security
+ switchport port-security maximum 2
+ switchport port-security violation shutdown
+ no shutdown
+
+Verificaciones realizadas
+-------------------------
+show vlan brief
+show interfaces trunk
+show port-security
+show port-security interface gi0/1
+show port-security interface gi0/2
+show port-security address
+show interfaces status
+
+Evidencia de violación en Gi0/1
+-------------------------------
+Maximum MAC Addresses      : 2
+Violation Mode             : Shutdown
+Port Status                : Secure-shutdown
+Security Violation Count   : 1
+Last Source Address:Vlan   : 0211.2233.4402:10
+
+Mensaje observado:
+%PORT_SECURITY-2-PSECURE_VIOLATION: Security violation occurred, caused by MAC address 0211.2233.4402 on port GigabitEthernet0/1.
+
+Estado observado:
+Gi0/1  err-disabled  VLAN 10
+
+Recuperación del puerto
+-----------------------
+configure terminal
+interface GigabitEthernet0/1
+ shutdown
+ no shutdown
+end
