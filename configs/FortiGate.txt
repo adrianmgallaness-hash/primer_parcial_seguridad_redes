@@ -1,168 +1,234 @@
-FortiGate - Resumen de configuración verificada
-==============================================
+# FortiGate configuration - sanitized lab-relevant extract
+# Source: Fortigate-1_7-0_0444_202610070910.conf
+# FortiOS 7.0.9 build 0444
+# Sensitive/admin credentials, UUIDs and unrelated default objects omitted.
 
-Hostname observado: Fortigate-1
+config system global
+    set alias "FortiGate-VM64-KVM"
+    set hostname "Fortigate-1"
+    set timezone 04
+end
 
-Interfaces
-----------
-port1
-  IP: 10.21.50.2/30
-  Hacia: R1 (10.21.50.1)
-  Administrative Access: ping, https, http, ssh
+config system interface
+    edit "port1"
+        set vdom "root"
+        set ip 10.21.50.2 255.255.255.252
+        set allowaccess ping https ssh http
+        set type physical
+    next
+    edit "port2"
+        set vdom "root"
+        set type physical
+    next
+    edit "port3"
+        set vdom "root"
+        set ip 10.21.39.161 255.255.255.240
+        set allowaccess ping
+        set type physical
+        set alias "WEB-ZONE"
+        set device-identification enable
+        set lldp-transmission enable
+        set role lan
+    next
+    edit "VLAN10-USERS"
+        set vdom "root"
+        set ip 10.21.39.1 255.255.255.128
+        set allowaccess ping https ssh
+        set device-identification enable
+        set role lan
+        set interface "port2"
+        set vlanid 10
+    next
+    edit "VLAN20-ADMIN"
+        set vdom "root"
+        set ip 10.21.39.129 255.255.255.240
+        set allowaccess ping https ssh
+        set device-identification enable
+        set role lan
+        set interface "port2"
+        set vlanid 20
+    next
+end
 
-port2
-  Hacia: SW-LAN
-  Función: parent del trunk 802.1Q
+config system dns
+    set primary 96.45.45.45
+    set secondary 96.45.46.46
+end
 
-VLAN10-USERS
-  Parent: port2
-  VLAN ID: 10
-  IP: 10.21.39.1/25
-  DHCP: habilitado
-  Rango observado: 10.21.39.2 - 10.21.39.126
+config system dhcp server
+    edit 2
+        set dns-service default
+        set default-gateway 10.21.39.1
+        set netmask 255.255.255.128
+        set interface "VLAN10-USERS"
+        config ip-range
+            edit 1
+                set start-ip 10.21.39.2
+                set end-ip 10.21.39.126
+            next
+        end
+    next
+end
 
-VLAN20-ADMIN
-  Parent: port2
-  VLAN ID: 20
-  IP: 10.21.39.129/28
+config firewall address
+    edit "VLAN10-USERS address"
+        set type interface-subnet
+        set subnet 10.21.39.1 255.255.255.128
+        set interface "VLAN10-USERS"
+    next
+    edit "VLAN20-ADMIN address"
+        set type interface-subnet
+        set subnet 10.21.39.129 255.255.255.240
+        set interface "VLAN20-ADMIN"
+    next
+    edit "DB-SERVER"
+        set subnet 10.21.39.147 255.255.255.255
+    next
+    edit "SERVERS-NET"
+        set subnet 10.21.39.144 255.255.255.240
+    next
+    edit "WEB-SERVER"
+        set associated-interface "port3"
+        set subnet 10.21.39.162 255.255.255.255
+    next
+    edit "UBUNTU-ARCHIVE"
+        set type fqdn
+        set fqdn "archive.ubuntu.com"
+    next
+    edit "UBUNTU-SECURITY"
+        set type fqdn
+        set fqdn "security.ubuntu.com"
+    next
+    edit "DNS-GOOGLE"
+        set subnet 8.8.8.8 255.255.255.255
+    next
+end
 
-port3 / WEB-ZONE
-  IP: 10.21.39.161/28
-  Web Server: 10.21.39.162/28
+config router static
+    edit 1
+        # Default route: destination omitted by FortiOS = 0.0.0.0/0
+        set gateway 10.21.50.1
+        set device "port1"
+    next
+    edit 2
+        set dst 10.21.39.144 255.255.255.240
+        set gateway 10.21.50.1
+        set device "port1"
+    next
+end
 
-Rutas
------
-Default route:
-  0.0.0.0/0 -> 10.21.50.1 por port1
+config file-filter profile
+    edit "BLOCK-EXE"
+        config rules
+            edit "BLOCK-EXE-DOWNLOAD"
+                set protocol http
+                set action block
+                set file-type "exe"
+            next
+        end
+    next
+end
 
-Red de DB:
-  10.21.39.144/28 -> 10.21.50.1 por port1
+config firewall policy
+    edit 2
+        set name "BLOCK-USERS-DB-3306"
+        set srcintf "VLAN10-USERS"
+        set dstintf "port1"
+        # Action omitted in backup: FortiOS default is DENY
+        set srcaddr "VLAN10-USERS address"
+        set dstaddr "DB-SERVER"
+        set schedule "always"
+        set service "MYSQL"
+        set logtraffic all
+    next
 
-Objetos de dirección
---------------------
-DB-SERVER
-  10.21.39.147/32
+    edit 3
+        set name "USERS-to-SERVERS"
+        set srcintf "VLAN10-USERS"
+        set dstintf "port1"
+        set action accept
+        set srcaddr "VLAN10-USERS address"
+        set dstaddr "SERVERS-NET"
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
 
-SERVERS-NET
-  10.21.39.144/28
+    edit 1
+        set name "USERS-to-INTERNET"
+        set srcintf "VLAN10-USERS"
+        set dstintf "port1"
+        set action accept
+        set srcaddr "all"
+        set dstaddr "all"
+        set schedule "always"
+        set service "ALL"
+        set nat enable
+    next
 
-WEB-SERVER
-  10.21.39.162/32
+    edit 4
+        set name "WEB-to-DB-3306"
+        set srcintf "port3"
+        set dstintf "port1"
+        set action accept
+        set srcaddr "WEB-SERVER"
+        set dstaddr "DB-SERVER"
+        set schedule "always"
+        set service "MYSQL"
+        set logtraffic all
+    next
 
-DNS-GOOGLE
-  8.8.8.8/32
+    edit 5
+        set name "WEB-to-UPDATES"
+        set srcintf "port3"
+        set dstintf "port1"
+        set action accept
+        set srcaddr "WEB-SERVER"
+        set dstaddr "UBUNTU-ARCHIVE" "UBUNTU-SECURITY"
+        set schedule "always"
+        set service "HTTP" "HTTPS"
+        set logtraffic all
+        set nat enable
+        set tcp-mss-sender 1360
+        set tcp-mss-receiver 1360
+    next
 
-Objetos FQDN
-------------
-UBUNTU-ARCHIVE
-  archive.ubuntu.com
+    edit 7
+        set name "WEB-to-DNS"
+        set srcintf "port3"
+        set dstintf "port1"
+        set action accept
+        set srcaddr "WEB-SERVER"
+        set dstaddr "DNS-GOOGLE"
+        set schedule "always"
+        set service "DNS"
+        set nat enable
+    next
 
-UBUNTU-SECURITY
-  security.ubuntu.com
+    edit 6
+        set name "BLOCK-WEB-OTHER"
+        set srcintf "port3"
+        set dstintf "port1"
+        # Action omitted in backup: FortiOS default is DENY
+        set srcaddr "WEB-SERVER"
+        set dstaddr "all"
+        set schedule "always"
+        set service "ALL"
+        set logtraffic all
+    next
 
-Políticas relevantes
---------------------
-
-BLOCK-USERS-DB-3306
-  Incoming: VLAN10-USERS
-  Outgoing: port1
-  Source: VLAN10-USERS address
-  Destination: DB-SERVER
-  Service: MYSQL / TCP 3306
-  Action: DENY
-  Logging: habilitado
-
-USERS-to-SERVERS
-  Incoming: VLAN10-USERS
-  Outgoing: port1
-  Destination: SERVERS-NET
-  Service: ALL
-  Action: ACCEPT
-  NAT: OFF
-
-USERS-to-INTERNET
-  Incoming: VLAN10-USERS
-  Outgoing: port1
-  Destination: all
-  Service: ALL
-  Action: ACCEPT
-  NAT: ON (Outgoing Interface Address)
-
-WEB-to-DB-3306
-  Incoming: WEB-ZONE / port3
-  Outgoing: port1
-  Source: WEB-SERVER
-  Destination: DB-SERVER
-  Service: MYSQL / TCP 3306
-  Action: ACCEPT
-  NAT: OFF
-  Log Allowed Traffic: All Sessions
-
-WEB-to-UPDATES
-  Incoming: WEB-ZONE / port3
-  Outgoing: port1
-  Source: WEB-SERVER
-  Destination: UBUNTU-ARCHIVE, UBUNTU-SECURITY
-  Service: HTTP, HTTPS
-  Action: ACCEPT
-  NAT: ON
-  Log Allowed Traffic: All Sessions
-
-WEB-to-DNS
-  Incoming: WEB-ZONE / port3
-  Outgoing: port1
-  Source: WEB-SERVER
-  Destination: DNS-GOOGLE
-  Service: DNS
-  Action: ACCEPT
-  NAT: ON
-  Log Allowed Traffic: All Sessions
-
-BLOCK-WEB-OTHER
-  Incoming: WEB-ZONE / port3
-  Outgoing: port1
-  Source: WEB-SERVER
-  Destination: all
-  Service: ALL
-  Action: DENY
-  Log Violation Traffic: ON
-
-USERS-to-WEB
-  Incoming: VLAN10-USERS
-  Outgoing: WEB-ZONE / port3
-  Source: VLAN10-USERS address
-  Destination: WEB-SERVER
-  Service: HTTP
-  Action: ACCEPT
-  NAT: OFF
-  Inspection Mode: Flow-based
-  File Filter: BLOCK-EXE
-  Log Allowed Traffic: All Sessions
-
-Orden relevante de microsegmentación
-------------------------------------
-1. WEB-to-DB-3306
-2. WEB-to-UPDATES
-3. WEB-to-DNS
-4. BLOCK-WEB-OTHER
-
-File Filter
------------
-Perfil: BLOCK-EXE
-Regla: BLOCK-EXE-DOWNLOAD
-Protocol: HTTP
-File Type: exe
-Action: Block
-
-Pruebas verificadas
--------------------
-- VLAN10 -> DB TCP/3306: bloqueado y registrado.
-- VLAN10 -> Web HTTP: permitido.
-- Web -> DB TCP/3306: permitido.
-- Web -> DB ICMP: bloqueado.
-- Web -> Internet ICMP: bloqueado.
-- Web -> 8.8.8.8 TCP/22: bloqueado.
-- Web -> archive.ubuntu.com HTTP: permitido.
-- Web -> example.com HTTP: bloqueado por BLOCK-WEB-OTHER.
-- TCP/443 hacia archive.ubuntu.com abre, pero el handshake TLS completo presentó timeout en el laboratorio.
-- Descarga de `prueba.exe`: interrumpida por File Filter; evento visible en logs.
+    edit 8
+        set name "USERS-to-WEB"
+        set srcintf "VLAN10-USERS"
+        set dstintf "port3"
+        set action accept
+        set srcaddr "VLAN10-USERS address"
+        set dstaddr "WEB-SERVER"
+        set schedule "always"
+        set service "HTTP"
+        set utm-status enable
+        set ssl-ssh-profile "certificate-inspection"
+        set file-filter-profile "BLOCK-EXE"
+        set logtraffic all
+    next
+end
